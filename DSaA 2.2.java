@@ -1,4 +1,5 @@
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class MyIterator implements Iterator<Integer> {
     private int curr;
