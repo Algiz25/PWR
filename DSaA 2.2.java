@@ -14,6 +14,10 @@ public class MyIterator implements Iterator<Integer> {
 
     @Override
     public Integer next() {
+        //will always be true
+        if (!hasNext()) { 
+            throw new NoSuchElementException();
+        }
         return curr++;
     }
 
