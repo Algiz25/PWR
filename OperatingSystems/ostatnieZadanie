@@ -1,0 +1,155 @@
+import random
+import matplotlib.pyplot as plt
+
+class Processor:
+    def __init__(self, id):
+        self.id = id
+        self.load = 0
+        self.history = []
+
+    def assign_process(self, process_load):
+        self.load += process_load
+  #      self.history.append(self.load)
+
+    def remove_process(self, process_load):
+        self.load -= process_load
+
+    def record_load(self):
+        self.history.append(self.load)
+
+    def is_over_max(self, max_treshold):
+        return self.load > max_treshold
+
+
+def simulate_random_algorithm(num_processors, num_processes, process_loads):
+    processors = [Processor(i) for i in range(num_processors)]
+    num_requests_sent = 0
+    num_migrations = 0
+
+    for k in range(num_processes):
+        process_load = process_loads[k]
+
+        chosen = random.choice(processors)
+        chosen.assign_process(process_load)
+        num_requests_sent += 1
+
+        for p in processors:
+            p.record_load()
+
+    return processors, num_requests_sent, num_migrations
+
+
+def simulate_min_algorithm(num_processors, num_processes, process_loads, min_threshold=10):
+    processors = [Processor(i) for i in range(num_processors)]
+    num_requests_sent = 0
+    num_migrations = 0
+
+    for k in range(num_processes):
+        process_load = process_loads[k]
+
+        processors[0].assign_process(process_load)
+        num_requests_sent += 1
+        for p in processors:
+            p.record_load()
+
+        best_target = 0
+        for i in range(1, len(processors)):
+            num_requests_sent += 1
+            if processors[i].load < min_threshold:
+                if best_target == 0 and processors[i].load + process_load < processors[best_target].load:
+                    best_target = i
+                elif best_target != 0 and processors[i].load < processors[best_target].load:
+                    best_target = i
+
+        if best_target != 0:
+            processors[0].remove_process(process_load)
+            processors[best_target].assign_process(process_load)
+            num_requests_sent += 1
+            num_migrations += 1
+
+        for p in processors:
+            p.record_load()
+
+    return processors, num_requests_sent, num_migrations
+
+
+def simulate_max_algorithm(num_processors, num_processes, process_loads, max_threshold=10):
+    processors = [Processor(i) for i in range(num_processors)]
+    num_requests_sent = 0
+    num_migrations = 0
+
+    for k in range(num_processes):
+        process_load = process_loads[k]
+
+        processors[0].assign_process(process_load)
+        num_requests_sent += 1
+        for p in processors:
+            p.record_load()
+
+        overloaded_count = 0
+
+        if overloaded_count != num_processors:
+            for i in range(len(processors)):
+                if processors[i].is_over_max(max_threshold):
+                    for j in range(len(processors)):
+                        num_requests_sent += 1
+                        if processors[j].load + process_load < max_threshold:
+                            processors[i].remove_process(process_load)
+                            processors[j].assign_process(process_load)
+                            num_migrations += 1
+                            break
+
+            for i in range(len(processors)):
+                if processors[i].is_over_max(max_threshold):
+                    overloaded_count += 1
+
+        for p in processors:
+            p.record_load()
+
+    return processors, num_requests_sent, num_migrations
+
+def plot_cpu_loads(processors, name):
+    plt.style.use('dark_background')
+    for processor in processors:
+        plt.plot(processor.history, label=f'P{processor.id}')
+    plt.xlabel('Time (Process arrivals)')
+    plt.ylabel('CPU Load')
+    plt.title(f'CPU Load Over Time - {name} Algorithm')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+# Generate processes
+num_processes = 10
+max_load = 10
+num_processors = 5
+process_loads = []
+for i in range(num_processes):
+    process_loads.append(random.randint(1, max_load))
+
+# Run simulation
+processors0, requests_sent0, migrations0 = simulate_random_algorithm(num_processors, num_processes, process_loads)
+processors1, requests_sent1, migrations1 = simulate_min_algorithm(num_processors, num_processes, process_loads, 10)
+processors2, requests_sent2, migrations2 = simulate_max_algorithm(num_processors, num_processes, process_loads, 10)
+
+# Output
+print(f"Number of process requests sent: {requests_sent0}")
+print(f"Number of process migrations: {migrations0}")
+
+# Plot CPU loads
+plot_cpu_loads(processors0, 'Random')
+
+# Output
+print(f"Number of process requests sent: {requests_sent1}")
+print(f"Number of process migrations: {migrations1}")
+
+# Plot CPU loads
+plot_cpu_loads(processors1, 'Min Threshold')
+
+# Output
+print(f"Number of process requests sent: {requests_sent2}")
+print(f"Number of process migrations: {migrations2}")
+
+# Plot CPU loads
+plot_cpu_loads(processors2, 'Max Threshold')
